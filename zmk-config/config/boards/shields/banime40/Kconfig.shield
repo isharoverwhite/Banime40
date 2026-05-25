@@ -1,0 +1,2 @@
+config SHIELD_BANIME40
+    def_bool $(shields_list_contains,banime40)

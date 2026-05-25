@@ -1,0 +1,75 @@
+/*
+ * banime40 ZMK Shield Overlay
+ * Target board: HBY nRF52840 (nice!nano-compatible clone)
+ *
+ * Matrix: 4 rows x 10 cols, diode direction COL2ROW
+ * Diode COL2ROW: columns are driven (output), rows are read (input+pulldown)
+ *
+ * Pin mapping (ATmega32U4 QMK notation -> HBY nRF52840 GPIO):
+ *
+ *  ROWS (inputs, pulled low, driven high by column through diode when key pressed):
+ *   Row 0  E6  Pro Micro pin 7   HBY:011  -> P0.11  keys: Q W E R T Y U I O P
+ *   Row 1  D7  Pro Micro pin 6   HBY:100  -> P1.00  keys: A S D F G H J K L -
+ *   Row 2  C6  Pro Micro pin 5   HBY:024  -> P0.24  keys: Z X C V B N M , . /
+ *   Row 3  D4  Pro Micro pin 4   HBY:022  -> P0.22  keys: LCtrl LGui LAlt LShift Bksp Space Enter App Del Esc
+ *
+ *  COLS (outputs, driven high one at a time to scan):
+ *   Col 0  B4  Pro Micro pin 8   HBY:104  -> P1.04  keys: Q / A / Z / LCtrl
+ *   Col 1  B5  Pro Micro pin 9   HBY:106  -> P1.06  keys: W / S / X / LGui
+ *   Col 2  B6  Pro Micro pin 10  HBY:000  -> P0.00  keys: E / D / C / LAlt
+ *          NOTE: P0.00 is XL1 (32kHz crystal) on some nRF52840 boards.
+ *              This board has no visible 32kHz crystal -> likely using RC osc -> P0.00 is free GPIO.
+ *              Verify if board boots correctly; if Col2 misfires, board may use P0.00 for LF clock.
+ *   Col 3  B2  Pro Micro pin 16  HBY:010  -> P0.10  keys: R / F / V / LShift
+ *   Col 4  B3  Pro Micro pin 14  HBY:111  -> P1.11  keys: T / G / B / Bksp(Fn)
+ *   Col 5  B1  Pro Micro pin 15  HBY:113  -> P1.13  keys: Y / H / N / Space(Num)
+ *   Col 6  F7  Pro Micro A0      HBY:115  -> P1.15  keys: U / J / M / Enter
+ *   Col 7  F6  Pro Micro A1      HBY:002  -> P0.02  keys: I / K / , / App
+ *   Col 8  F5  Pro Micro A2      HBY:029  -> P0.29  keys: O / L / . / Del
+ *   Col 9  F4  Pro Micro A3      HBY:031  -> P0.31  keys: P / - / / / Esc
+ */
+
+/ {
+    chosen {
+        zmk,kscan = &kscan0;
+        zmk,battery = &vbatt;
+    };
+
+    /*
+     * Battery monitoring via nRF52840 internal VDDH/5 measurement.
+     * No external ADC pin or voltage divider required — all analog pins
+     * on this board are occupied by the keyboard matrix.
+     * Accuracy: ~±5%, sufficient for a coarse battery indicator.
+     * Reports via BLE Battery Service (UUID 0x180F) automatically.
+     */
+    vbatt: vbatt {
+        compatible = "zmk,battery-nrf-vddhdiv5";
+        label = "BATTERY";
+    };
+
+    kscan0: kscan_0 {
+        compatible = "zmk,kscan-gpio-matrix";
+        wakeup-source;
+        diode-direction = "col2row";
+
+        col-gpios
+            = <&gpio1  4  GPIO_ACTIVE_HIGH>   /* Col 0 | B4  | Q/A/Z/LCtrl   */
+            , <&gpio1  6  GPIO_ACTIVE_HIGH>   /* Col 1 | B5  | W/S/X/LGui    */
+            , <&gpio0  0  GPIO_ACTIVE_HIGH>   /* Col 2 | B6  | E/D/C/LAlt    HBY:000 = P0.00 */
+            , <&gpio0  10 GPIO_ACTIVE_HIGH>   /* Col 3 | B2  | R/F/V/LShift  HBY:010 = P0.10 */
+            , <&gpio1  11 GPIO_ACTIVE_HIGH>   /* Col 4 | B3  | T/G/B/Bksp    */
+            , <&gpio1  13 GPIO_ACTIVE_HIGH>   /* Col 5 | B1  | Y/H/N/Space   */
+            , <&gpio1  15 GPIO_ACTIVE_HIGH>   /* Col 6 | F7  | U/J/M/Enter   */
+            , <&gpio0  2  GPIO_ACTIVE_HIGH>   /* Col 7 | F6  | I/K/,/App     */
+            , <&gpio0  29 GPIO_ACTIVE_HIGH>   /* Col 8 | F5  | O/L/./Del     */
+            , <&gpio0  31 GPIO_ACTIVE_HIGH>   /* Col 9 | F4  | P/-///Esc     */
+            ;
+
+        row-gpios
+            = <&gpio0  11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* Row 0 | E6 | Q..P           */
+            , <&gpio1  0  (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* Row 1 | D7 | A..-(Nav)       */
+            , <&gpio0  24 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* Row 2 | C6 | Z../(L4)        */
+            , <&gpio0  22 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>  /* Row 3 | D4 | LCtrl..Esc      */
+            ;
+    };
+};

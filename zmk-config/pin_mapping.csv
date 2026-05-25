@@ -1,0 +1,15 @@
+matrix_pos,type,qmk_pin,qmk_port_notation,promicro_pin_number,hby_silkscreen,nrf52840_gpio,zmk_node,keys_in_base_layer,verify_needed,notes
+Row 0,row,E6,PE6 (Port E pin 6),7,011,P0.11,&gpio0 11,"Q | W | E | R | T | Y | U | I | O | P (entire top alpha row)",NO,Confident mapping
+Row 1,row,D7,PD7 (Port D pin 7),6,100,P1.00,&gpio1 0,"A | S | D | F | G | H | J | K | L | -(hold=Nav layer) (home row)",NO,Confident mapping
+Row 2,row,C6,PC6 (Port C pin 6),5,024,P0.24,"Z | X | C | V | B | N | M | , | . | /(hold=Layer4) (bottom alpha row)",NO,Confident mapping
+Row 3,row,D4,PD4 (Port D pin 4),4,022,P0.22,"LCtrl | LGui | LAlt | LShift | Bksp(hold=Fn) | Space(hold=Num) | Enter | App/Menu | Delete | Escape (modifier+thumb row)",NO,Confident mapping
+Col 0,col,B4,PB4 (Port B pin 4),8,104,P1.04,&gpio1 4,"Q [R0] | A [R1] | Z [R2] | LCtrl [R3]",NO,"HBY uses P1.04 here — nice!nano v2 uses P1.02 at this physical position. HBY-specific mapping."
+Col 1,col,B5,PB5 (Port B pin 5),9,106,P1.06,&gpio1 6,"W [R0] | S [R1] | X [R2] | LGui [R3]",NO,"HBY uses P1.06 here — nice!nano v2 uses P1.04 at this physical position. HBY-specific mapping."
+Col 2,col,B6,PB6 (Port B pin 6),10,000,P0.00,&gpio0 0,"E [R0] | D [R1] | C [R2] | LAlt [R3]",NO,"Confirmed from high-res image: label is '000' = P0.00. Board has no visible 32kHz crystal so P0.00 likely free GPIO (not used for XL1). Verify if all keys in col2 register correctly after flash."
+Col 3,col,B2,PB2 (Port B pin 2 / MOSI),16,010,P0.10,&gpio0 10,"R [R0] | F [R1] | V [R2] | LShift [R3]",NO,"CORRECTED from high-res image: label is '010' = P0.10 (NOT P1.10 as previously read from blurry image). ZMK node is &gpio0 10 not &gpio1 10."
+Col 4,col,B3,PB3 (Port B pin 3 / MISO),14,111,P1.11,&gpio1 11,"T [R0] | G [R1] | B [R2] | Bksp/Fn-layer [R3]",NO,Confident mapping
+Col 5,col,B1,PB1 (Port B pin 1 / SCK),15,113,P1.13,&gpio1 13,"Y [R0] | H [R1] | N [R2] | Space/Num-layer [R3]",NO,Confident mapping
+Col 6,col,F7,PF7 (Port F pin 7 / A0),A0,115,P1.15,&gpio1 15,"U [R0] | J [R1] | M [R2] | Enter [R3]",NO,Confident mapping
+Col 7,col,F6,PF6 (Port F pin 6 / A1),A1,002,P0.02,&gpio0 2,"I [R0] | K [R1] | , [R2] | App/Menu [R3]",NO,Confident mapping
+Col 8,col,F5,PF5 (Port F pin 5 / A2),A2,029,P0.29,&gpio0 29,"O [R0] | L [R1] | . [R2] | Delete [R3]",NO,Confident mapping
+Col 9,col,F4,PF4 (Port F pin 4 / A3),A3,031,P0.31,&gpio0 31,"P [R0] | -(hold=Nav) [R1] | /(hold=L4) [R2] | Escape [R3]",NO,Confident mapping

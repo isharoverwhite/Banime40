@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: radial-gradient(ellipse 90% 45% at 50% -5%, rgba(167,139,250,0.13) 0%, transparent 65%), #0b0d16;
+  color: #e8e9f8;
+  overflow: hidden;
+}
+
+/* Hero glow layer for backgrounds */
+.hero-glow {
+  background: radial-gradient(ellipse 90% 45% at 50% -5%, rgba(167,139,250,0.13) 0%, transparent 65%), #0b0d16;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(167,139,250,0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.5); }
+
+/* Material Symbols utility */
+.material-symbols-outlined {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Select & input focus ring */
+select:focus, input:focus, textarea:focus {
+  border-color: #a78bfa !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(167,139,250,0.15);
+}
+
+/* Ensure Inter is the default font */
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+/* But reset mono elements */
+.font-mono, pre, code, .keycap {
+  font-family: 'JetBrains Mono', monospace !important;
+}

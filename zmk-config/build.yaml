@@ -1,0 +1,8 @@
+---
+include:
+  # Build target: HBY nRF52840 board running banime40 shield
+  # Use nice_nano_v2 as base board (same nRF52840 chip, compatible ZMK board def)
+  # Note: HBY board uses P1.04/P1.06 for Pro Micro pin 8/9
+  #       where nice_nano_v2 uses P1.02/P1.04 — this is handled in the overlay.
+  - board: nice_nano_v2
+    shield: banime40

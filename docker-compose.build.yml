@@ -1,0 +1,21 @@
+# Build ZMK firmware using Docker
+# Usage: docker compose -f docker-compose.build.yml up
+services:
+  zmk-build:
+    image: zmkfirmware/zmk-build:stable
+    volumes:
+      - ./config:/workspace/zmk-config/config
+      - ./build:/workspace/zmk-config/build
+    environment:
+      - ZMK_CONFIG=/workspace/zmk-config/config
+    command: |
+      sh -c '
+        echo "=== Building banime40_remap firmware ==="
+        west build -d /workspace/zmk-config/build \
+          -b nice_nano_v2 -- \
+          -DSHIELD=banime40_remap \
+          -DZMK_CONFIG=/workspace/zmk-config/config
+        echo ""
+        echo "=== Build complete ==="
+        echo "Firmware: /workspace/zmk-config/build/zephyr/zmk.uf2"
+      '
