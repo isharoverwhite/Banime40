@@ -2,9 +2,39 @@ name: Build ZMK firmware
 
 on:
   push:
+    paths:
+      - 'config/**'
+      - 'build.yaml'
   pull_request:
   workflow_dispatch:
 
 jobs:
   build:
-    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare config dir
+        run: mkdir -p artifacts
+
+      - name: Build firmware
+        run: |
+          docker run --rm \
+            -v "$(pwd)/config:/workspace/zmk-config/config" \
+            zmkfirmware/zmk-build:stable \
+            /bin/bash -c "
+              west init -l /workspace/zmk-config/config
+              west update -n -o=--depth=1
+              west zephyr-export
+              west build -s zmk/app -b nice_nano_v2 -- \
+                -DSHIELD=banime40_remap \
+                -DZMK_CONFIG=/workspace/zmk-config/config
+              cp build/zephyr/zmk.uf2 /workspace/zmk-config/config/banime40_remap-nice_nano_v2.uf2
+            "
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: banime40_remap-nice_nano_v2
+          path: config/banime40_remap-nice_nano_v2.uf2
