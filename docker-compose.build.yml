@@ -2,7 +2,7 @@
 # Usage: docker compose -f docker-compose.build.yml up
 services:
   zmk-build:
-    image: zmkfirmware/zmk-build:stable
+    image: zmkfirmware/zmk-build-arm:stable
     volumes:
       - ./config:/workspace/zmk-config/config
       - ./build:/workspace/zmk-config/build

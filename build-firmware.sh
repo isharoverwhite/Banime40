@@ -22,7 +22,7 @@ echo "================================================"
 echo ""
 
 # Pull ZMK build docker image (pinned to ZMK 2025 stable)
-ZMK_IMAGE="zmkfirmware/zmk-build:stable"
+ZMK_IMAGE="zmkfirmware/zmk-build-arm:stable"
 echo "[1/3] Pulling ZMK build image..."
 docker pull "$ZMK_IMAGE" 2>&1 | tail -1
 
