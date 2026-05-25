@@ -10,36 +10,4 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container:
-      image: zmkfirmware/zmk-build-arm:stable
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup build directory
-        id: setup
-        run: |
-          BUILD_DIR=$(mktemp -d)
-          echo "build_dir=${BUILD_DIR}" >> $GITHUB_OUTPUT
-          cp -R config "${BUILD_DIR}/config"
-
-      - name: West Init & Update
-        working-directory: ${{ steps.setup.outputs.build_dir }}
-        run: |
-          west init -l config
-          west update -n -o=--depth=1
-          west zephyr-export
-
-      - name: Build firmware
-        working-directory: ${{ steps.setup.outputs.build_dir }}
-        run: |
-          west build -s zmk/app -b nice_nano_v2 -- \
-            -DSHIELD=banime40_remap \
-            -DZMK_CONFIG="${{ steps.setup.outputs.build_dir }}/config"
-
-      - name: Upload firmware
-        uses: actions/upload-artifact@v4
-        with:
-          name: banime40_remap-nice_nano_v2
-          path: ${{ steps.setup.outputs.build_dir }}/build/zephyr/zmk.uf2
+    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@main
