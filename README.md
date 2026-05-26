@@ -34,7 +34,6 @@ The banime40 PCB uses a standard Pro Micro socket. Swapping the original ATmega3
 | Power saving | None | Deep sleep after 15 min idle |
 | BLE profiles | — | 5 profiles (5 paired devices) |
 | Build tool | QMK | ZMK + Zephyr RTOS |
-| Auto CI | — | GitHub Actions → Release |
 
 ---
 
@@ -130,49 +129,14 @@ TOG   : toggle USB ↔ BLE
 
 ---
 
-## Build & Flash
+## Flash
 
-### Automatic (recommended)
-
-Push any change to `config/` → GitHub Actions builds the firmware and publishes a GitHub Release automatically.
-
-**Download:** [github.com/isharoverwhite/banime40/releases](https://github.com/isharoverwhite/banime40/releases)
-
-### Flash
+**Download firmware:** [github.com/isharoverwhite/banime40/releases](https://github.com/isharoverwhite/banime40/releases)
 
 1. Double-tap the RST pin (or hold the top-left key on power-up) to enter bootloader
 2. The board appears as a USB drive named **NRF52BOOT**
 3. Drag and drop `banime40_remap-nice_nano_v2.uf2` onto the drive
 4. The board reboots automatically
-
-### Local build (requires Zephyr SDK + west)
-
-```bash
-west init -l config
-west update
-west zephyr-export
-west build -p -s zmk/app -b nice_nano_v2 -- \
-  -DSHIELD=banime40_remap \
-  -DZMK_CONFIG="$(pwd)/config"
-```
-
----
-
-## Repository structure
-
-```
-banime40/
-├── build.yaml                          # west build target
-├── config/
-│   ├── west.yml                        # ZMK v0.3-branch pin
-│   └── boards/shields/banime40_remap/
-│       ├── banime40_remap.overlay      # GPIO matrix wiring (devicetree)
-│       ├── banime40_remap.keymap       # 5-layer key bindings
-│       ├── banime40_remap.conf         # Kconfig: BLE, USB, sleep, battery
-│       ├── CMakeLists.txt
-│       └── Kconfig.shield
-└── .github/workflows/build.yml        # CI: build + auto-release
-```
 
 ---
 
