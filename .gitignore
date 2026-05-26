@@ -1,6 +1,5 @@
-# Webapp
-app/node_modules/
-app/dist/
+# Webapp (local only, not tracked in repo)
+app/
 
 # Build artifacts
 node_modules/
