@@ -33,14 +33,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Cache west module downloads — keyed on west.yml content.
-      # On cache miss west fetches fresh; on hit west update is a no-op.
+      # .west/ contains absolute paths — never cache it.
+      # Cache only the fetched source modules (zmk, zephyr, …).
+      # west init always runs so it can (re-)create the .west/ workspace dir.
       - name: Restore west module cache
-        id: west-cache
         uses: actions/cache@v4
         with:
           path: |
-            .west
             zmk
             zephyr
             modules
@@ -50,9 +49,7 @@ jobs:
           restore-keys: |
             west-
 
-      # Skip init if cache hit to avoid re-initialising an existing workspace.
       - name: West Init
-        if: steps.west-cache.outputs.cache-hit != 'true'
         run: west init -l zmk-config/config
 
       - name: West Update
