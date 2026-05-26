@@ -32,19 +32,10 @@
 / {
     chosen {
         zmk,kscan = &kscan0;
-        zmk,battery = &vbatt;
-    };
-
-    /*
-     * Battery monitoring via nRF52840 internal VDDH/5 measurement.
-     * No external ADC pin or voltage divider required — all analog pins
-     * on this board are occupied by the keyboard matrix.
-     * Accuracy: ~±5%, sufficient for a coarse battery indicator.
-     * Reports via BLE Battery Service (UUID 0x180F) automatically.
-     */
-    vbatt: vbatt {
-        compatible = "zmk,battery-nrf-vddhdiv5";
-        label = "BATTERY";
+        /* zmk,battery disabled: driver API changed in ZMK/Zephyr 4.x
+         * TODO: re-enable once correct compatible string is confirmed.
+         * zmk,battery = &vbatt;
+         */
     };
 
     kscan0: kscan_0 {
