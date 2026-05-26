@@ -1,6 +1,13 @@
-node_modules
-dist
-build
+# Webapp
+app/node_modules/
+app/dist/
+
+# Build artifacts
+node_modules/
+dist/
+build/
+
+# OS & env
 .DS_Store
 *.log
 .env
