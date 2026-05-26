@@ -8,6 +8,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,8 +31,29 @@ jobs:
             -DSHIELD=banime40_remap \
             -DZMK_CONFIG="${GITHUB_WORKSPACE}/config"
 
-      - name: Upload firmware
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: banime40_remap-nice_nano_v2
           path: build/zephyr/zmk.uf2
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: banime40_remap-nice_nano_v2
+          path: firmware
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="firmware-$(date +%Y%m%d)-$(echo $GITHUB_SHA | cut -c1-7)"
+          gh release create "$TAG" \
+            "firmware/zmk.uf2#banime40_remap-nice_nano_v2.uf2" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Firmware $TAG" \
+            --notes "Auto-built from [\`${GITHUB_SHA:0:7}\`](https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)"
