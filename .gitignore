@@ -4,6 +4,9 @@ app/
 # Research notes (local only)
 knowledge/
 
+# Claude Code instructions (local only)
+CLAUDE.md
+
 # Build artifacts
 node_modules/
 dist/

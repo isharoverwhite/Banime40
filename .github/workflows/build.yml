@@ -1,59 +1,184 @@
-name: Build ZMK firmware
+name: Build ZMK Firmware
 
+# ──────────────────────────────────────────────────────────
+# Triggers
+# ──────────────────────────────────────────────────────────
 on:
   push:
+    branches: [main]
     paths:
-      - 'config/**'
-      - 'build.yaml'
+      - 'zmk-config/**'
+      - '.github/workflows/build.yml'
   pull_request:
+    paths:
+      - 'zmk-config/**'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: write
 
+# ──────────────────────────────────────────────────────────
+# Job 1: Build firmware
+# ──────────────────────────────────────────────────────────
 jobs:
   build:
+    name: Build banime40 (nice_nano_v2)
     runs-on: ubuntu-latest
     container:
       image: zmkfirmware/zmk-build-arm:stable
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: West Init & Update
-        run: |
-          west init -l config
-          west update -n -o=--depth=1
-          west zephyr-export
+      # Cache west module downloads — keyed on west.yml content.
+      # On cache miss west fetches fresh; on hit west update is a no-op.
+      - name: Restore west module cache
+        id: west-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .west
+            zmk
+            zephyr
+            modules
+            tools
+            bootloader
+          key: west-${{ hashFiles('zmk-config/config/west.yml') }}
+          restore-keys: |
+            west-
 
+      # Skip init if cache hit to avoid re-initialising an existing workspace.
+      - name: West Init
+        if: steps.west-cache.outputs.cache-hit != 'true'
+        run: west init -l zmk-config/config
+
+      - name: West Update
+        run: west update -n -o=--depth=1
+
+      - name: Export Zephyr CMake package
+        run: west zephyr-export
+
+      # ── Build ────────────────────────────────────────────
       - name: Build firmware
         run: |
-          west build -p -s zmk/app -b nice_nano_v2 -- \
-            -DSHIELD=banime40_remap \
-            -DZMK_CONFIG="${GITHUB_WORKSPACE}/config"
+          west build -p -s zmk/app \
+            -b nice_nano_v2 \
+            -- \
+            -DSHIELD=banime40 \
+            -DZMK_CONFIG="${GITHUB_WORKSPACE}/zmk-config/config"
 
-      - name: Upload artifact
+      # ── Sanity check ─────────────────────────────────────
+      - name: Verify firmware file
+        run: |
+          if [ ! -f build/zephyr/zmk.uf2 ]; then
+            echo "ERROR: zmk.uf2 not found — build may have failed silently"
+            exit 1
+          fi
+          SIZE=$(stat -c%s build/zephyr/zmk.uf2)
+          echo "Firmware: build/zephyr/zmk.uf2  (${SIZE} bytes)"
+          # Reject implausibly small files (< 64 KB suggests a stub/error)
+          if [ "$SIZE" -lt 65536 ]; then
+            echo "ERROR: firmware too small (${SIZE} bytes) — check build output"
+            exit 1
+          fi
+
+      # ── Upload artifact ───────────────────────────────────
+      # Artifact name encodes board + shield + short SHA for traceability.
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: banime40_remap-nice_nano_v2
+          name: banime40-nice_nano_v2-${{ github.sha }}
           path: build/zephyr/zmk.uf2
+          retention-days: 90
 
+      # ── PR comment ────────────────────────────────────────
+      # Posts a build-success comment on pull requests so reviewers can
+      # download and test the firmware without digging through Actions logs.
+      - name: Comment on PR (build success)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.sha.slice(0, 7);
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                '## ✅ Firmware build succeeded',
+                '',
+                `**Commit:** \`${sha}\``,
+                `**Artifact:** \`banime40-nice_nano_v2-${context.sha}\``,
+                '',
+                `[Download from Actions run](${runUrl})`,
+                '',
+                '### Flash',
+                '1. Double-tap RST → `NRF52BOOT` drive appears',
+                '2. Copy `zmk.uf2` to the drive',
+                '3. Board reboots automatically',
+              ].join('\n'),
+            });
+
+  # ──────────────────────────────────────────────────────────
+  # Job 2: Create GitHub Release (main branch only)
+  # ──────────────────────────────────────────────────────────
   release:
+    name: Release firmware
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download firmware artifact
+        uses: actions/download-artifact@v4
         with:
-          name: banime40_remap-nice_nano_v2
+          name: banime40-nice_nano_v2-${{ github.sha }}
           path: firmware
+
+      - name: Rename firmware for release
+        run: mv firmware/zmk.uf2 firmware/banime40-nice_nano_v2.uf2
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          SERVER: ${{ github.server_url }}
         run: |
-          TAG="firmware-$(date +%Y%m%d)-$(echo $GITHUB_SHA | cut -c1-7)"
+          TAG="v$(date +%Y%m%d-%H%M)-${SHA:0:7}"
+          COMMIT_URL="${SERVER}/${REPO}/commit/${SHA}"
+          NOTES=$(cat <<MARKDOWN
+          ## banime40 ZMK Firmware — ${TAG}
+
+          Built from [\`${SHA:0:7}\`](${COMMIT_URL})
+
+          ### Layers
+          | # | Name | Trigger |
+          |---|---|---|
+          | 0 | Base (QWERTY) | — |
+          | 1 | Num / Sym | Hold **Space** |
+          | 2 | Fn / Media | Hold **Bksp** |
+          | 3 | Navigation | Hold **-** |
+          | 4 | System / BT | Hold **/** |
+
+          ### Flash Instructions
+          1. Double-tap RST pin to enter bootloader — \`NRF52BOOT\` drive appears
+          2. Drag-and-drop \`banime40-nice_nano_v2.uf2\` onto the drive
+          3. Board reboots automatically into new firmware
+
+          ### Bluetooth
+          - **BT1–BT5** (Q–T on Layer 4): select paired device slot
+          - **BTCLR** (P on Layer 4): clear bond on current slot (re-pair)
+          - **USB/BLE/TOG** (U/I/O on Layer 4): force output mode
+          - Auto-switch: USB HID when connected to a computer, BLE otherwise
+          MARKDOWN
+          )
           gh release create "$TAG" \
-            "firmware/zmk.uf2#banime40_remap-nice_nano_v2.uf2" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Firmware $TAG" \
-            --notes "Auto-built from [\`${GITHUB_SHA:0:7}\`](https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)"
+            "firmware/banime40-nice_nano_v2.uf2" \
+            --repo "$REPO" \
+            --title "Firmware ${TAG}" \
+            --notes "$NOTES"
