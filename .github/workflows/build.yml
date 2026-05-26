@@ -33,33 +33,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # .west/ contains absolute paths — never cache it.
-      # Cache only the fetched source modules (zmk, zephyr, …).
-      # west init always runs so it can (re-)create the .west/ workspace dir.
+      # west init -l config (from zmk-config/) places the workspace root at
+      # zmk-config/ — so all west commands must run from that directory.
+      # .west/ is NOT cached: it stores absolute paths that break across runs.
+      # Only the fetched source modules (zmk, zephyr, …) are cached.
       - name: Restore west module cache
         uses: actions/cache@v4
         with:
           path: |
-            zmk
-            zephyr
-            modules
-            tools
-            bootloader
+            zmk-config/zmk
+            zmk-config/zephyr
+            zmk-config/modules
+            zmk-config/tools
+            zmk-config/bootloader
           key: west-${{ hashFiles('zmk-config/config/west.yml') }}
           restore-keys: |
             west-
 
       - name: West Init
-        run: west init -l zmk-config/config
+        working-directory: zmk-config
+        run: west init -l config
 
       - name: West Update
+        working-directory: zmk-config
         run: west update -n -o=--depth=1
 
       - name: Export Zephyr CMake package
+        working-directory: zmk-config
         run: west zephyr-export
 
       # ── Build ────────────────────────────────────────────
       - name: Build firmware
+        working-directory: zmk-config
         run: |
           west build -p -s zmk/app \
             -b nice_nano_v2 \
@@ -70,25 +75,23 @@ jobs:
       # ── Sanity check ─────────────────────────────────────
       - name: Verify firmware file
         run: |
-          if [ ! -f build/zephyr/zmk.uf2 ]; then
+          if [ ! -f zmk-config/build/zephyr/zmk.uf2 ]; then
             echo "ERROR: zmk.uf2 not found — build may have failed silently"
             exit 1
           fi
-          SIZE=$(stat -c%s build/zephyr/zmk.uf2)
-          echo "Firmware: build/zephyr/zmk.uf2  (${SIZE} bytes)"
-          # Reject implausibly small files (< 64 KB suggests a stub/error)
+          SIZE=$(stat -c%s zmk-config/build/zephyr/zmk.uf2)
+          echo "Firmware: zmk-config/build/zephyr/zmk.uf2  (${SIZE} bytes)"
           if [ "$SIZE" -lt 65536 ]; then
             echo "ERROR: firmware too small (${SIZE} bytes) — check build output"
             exit 1
           fi
 
       # ── Upload artifact ───────────────────────────────────
-      # Artifact name encodes board + shield + short SHA for traceability.
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
           name: banime40-nice_nano_v2-${{ github.sha }}
-          path: build/zephyr/zmk.uf2
+          path: zmk-config/build/zephyr/zmk.uf2
           retention-days: 90
 
       # ── PR comment ────────────────────────────────────────
