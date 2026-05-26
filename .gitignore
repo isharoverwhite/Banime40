@@ -1,6 +1,9 @@
 # Webapp (local only, not tracked in repo)
 app/
 
+# Research notes (local only)
+knowledge/
+
 # Build artifacts
 node_modules/
 dist/

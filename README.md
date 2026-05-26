@@ -1,101 +1,183 @@
-# banime40 — Firmware Mod
+<p align="center">
+  <img src="https://img.shields.io/badge/ZMK-v0.3--branch-blue?style=for-the-badge">
+  <img src="https://img.shields.io/badge/board-nRF52840-green?style=for-the-badge">
+  <img src="https://img.shields.io/badge/BLE-5.0-blueviolet?style=for-the-badge">
+  <img src="https://img.shields.io/badge/layout-40%25_ortholinear-orange?style=for-the-badge">
+</p>
 
-Repo này chứa **2 bản firmware** cho bàn phím [banime40](https://github.com/ChrisChrisLoLo/banime40) (ortholinear 4×10, gasket mount, hotswap).
-
----
-
-## Bản 1 — ATmega32U4 / QMK (bản gốc)
-**Thư mục:** `qmk/`
-
-| | |
-|---|---|
-| Controller | Pro Micro (ATmega32U4) |
-| Firmware | QMK |
-| Kết nối | USB có dây |
-| VIA/VIAL | Có (10 layers dynamic) |
-| Nguồn | USB 5V |
-
-Đây là bản firmware gốc từ upstream QMK (`keyboards/sporewoh/banime40`, PR #16694).
-Dùng khi giữ nguyên Pro Micro trên PCB gốc.
-
-```bash
-# Build
-make sporewoh/banime40:default
-
-# Flash
-make sporewoh/banime40:default:flash
-```
+<h1 align="center">banime40 — ZMK Bluetooth Port</h1>
+<h3 align="center">QMK → ZMK firmware port for the banime40 ortholinear 40% keyboard</h3>
 
 ---
 
-## Bản 2 — nRF52840 / ZMK (bản mod Bluetooth)
-**Thư mục:** `zmk-config/`
+## Attribution
 
-| | |
-|---|---|
-| Controller | SAMIROB / HBY nRF52840 (Pro Micro drop-in) |
-| Firmware | ZMK |
-| Kết nối | USB có dây + Bluetooth 5.0 (5 profiles) |
-| VIA/VIAL | Không (dùng ZMK Studio) |
-| Nguồn | USB hoặc LiPo qua B+/B− |
-| Pin | Báo % qua BLE Battery Service |
-| Sleep | Deep sleep sau 15 phút idle |
+This project is a firmware port of the **banime40** keyboard, originally designed and built by [ChrisChrisLoLo (sporewoh)](https://github.com/ChrisChrisLoLo/banime40).
 
-Swap Pro Micro → SAMIROB/HBY nRF52840 board (cắm thẳng cùng socket, cùng chiều).
+- Original hardware design & QMK firmware: [github.com/ChrisChrisLoLo/banime40](https://github.com/ChrisChrisLoLo/banime40)
+- Original QMK PR: [qmk/qmk_firmware#16694](https://github.com/qmk/qmk_firmware/pull/16694)
+- This repo contains only the ZMK port — no QMK code is vendored here.
 
-```bash
-# Build local (yêu cầu Zephyr SDK + west)
-west build -p -b nice_nano_v2 -- -DSHIELD=banime40
-
-# Flash: double-tap RST → drag-and-drop zmk.uf2 vào drive NRF52BOOT
-```
-
-### Tính năng thêm so với bản gốc
-
-| Tính năng | Cách dùng |
-|---|---|
-| Chuyển USB ↔ BLE | Tự động (cắm vào máy tính → USB, cắm sạc → BLE giữ nguyên) |
-| Chọn BT profile | Giữ `/` → Q/W/E/R/T (BT1–5) |
-| Xóa bond BT | Giữ `/` → P |
-| Override output | Giữ `/` → U (USB) / I (BLE) / O (toggle) |
-| Battery % | Hiện tự động trên host qua BLE |
+All credit for the keyboard design goes to the original author. This port exists solely to enable Bluetooth on the same PCB using a drop-in nRF52840 controller.
 
 ---
 
-## Cấu trúc repo
+## What this port adds
 
-```
-banime40_mod/
-├── README.md                       ← file này
-├── CLAUDE.md                       ← hướng dẫn cho Claude Code
-├── knowledge/                      ← research notes tích lũy theo session
-│
-├── qmk/                            ← [ATmega32U4] QMK firmware gốc
-│   ├── keyboard.json               ← matrix, pins, USB config
-│   ├── readme.md
-│   └── keymaps/default/keymap.c   ← 4 layers: Base, Num/Sym, Fn, Nav
-│
-└── zmk-config/                     ← [nRF52840] ZMK Bluetooth port
-    ├── build.yaml
-    ├── pin_mapping.csv             ← bảng dịch ATmega32U4 → nRF52840 GPIO
-    └── config/boards/shields/banime40/
-        ├── banime40.overlay        ← matrix GPIO + battery node
-        ├── banime40.keymap         ← 5 layers: Base, Num/Sym, Fn, Nav, System
-        ├── banime40.conf           ← BLE, USB, sleep, battery reporting
-        ├── CMakeLists.txt
-        └── Kconfig.shield
-```
+The banime40 PCB uses a standard Pro Micro socket. Swapping the original ATmega32U4 Pro Micro for an HBY/SAMIROB nRF52840 clone (same pinout, same socket) unlocks wireless operation without any PCB modification.
+
+| Feature | QMK (original) | ZMK (this port) |
+|---|---|---|
+| MCU | ATmega32U4 | nRF52840 (HBY/SAMIROB clone) |
+| Connection | USB HID only | USB HID + Bluetooth 5.0 |
+| Battery | None | LiPo via B+/B− pads, level reported over BLE |
+| Power saving | None | Deep sleep after 15 min idle |
+| BLE profiles | — | 5 profiles (5 paired devices) |
+| Build tool | QMK | ZMK + Zephyr RTOS |
+| Auto CI | — | GitHub Actions → Release |
 
 ---
 
 ## Hardware
 
-PCB gốc banime40 dùng **Pro Micro socket** — có thể cắm thẳng nRF52840 clone board mà không cần sửa mạch.
-
-| | Pro Micro (ATmega32U4) | SAMIROB/HBY nRF52840 |
+| | Original | This port |
 |---|---|---|
-| Socket | 2×12 (24 pin) | 2×12 + B+/B− (26 pad, 24 vào socket) |
-| Chiều cắm | USB ra ngoài case | Giống hệt |
-| Cần sửa PCB | Không | Không |
+| Controller | Pro Micro (ATmega32U4) | HBY / SAMIROB nRF52840 |
+| Socket fit | 2×12 Pro Micro | Drop-in, same socket, same orientation |
+| PCB mod needed | No | No |
+| Battery | — | LiPo connected to B+ / B− pads |
 
-Chi tiết pin mapping đầy đủ xem `zmk-config/pin_mapping.csv`.
+> The HBY/SAMIROB board is a nice!nano v2 clone. GPIO assignments for Col 0/1 differ slightly (P1.04/P1.06 instead of P1.02/P1.04) — the overlay in this repo reflects the correct mapping.
+
+---
+
+## Keymap — 5 Layers
+
+**Layer 0 — Base (QWERTY)**
+```
+┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+│ Q │ W │ E │ R │ T │ Y │ U │ I │ O │ P │
+├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+│ A │ S │ D │ F │ G │ H │ J │ K │ L │ - │ hold - → Nav
+├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+│ Z │ X │ C │ V │ B │ N │ M │ , │ . │ / │ hold / → System
+├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+│CTL│GUI│ALT│SFT│BSP│SPC│ENT│APP│DEL│ESC│
+└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+                     ↑   ↑
+              hold = Fn  Num
+```
+
+**Layer 1 — Num / Sym** (hold Space)
+```
+┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+│ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │ 9 │ 0 │
+├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+│TAB│   │   │ ` │ [ │ ] │ \ │ ; │ ' │ - │
+├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+│   │   │   │   │ = │ - │   │   │   │   │
+├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤
+│   │   │   │   │   │▓▓▓│   │   │   │   │
+└───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+```
+
+**Layer 2 — Fn / Media** (hold Bksp)
+```
+┌────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
+│ F1 │ F2 │ F3 │ F4 │ F5 │ F6 │ F7 │ F8 │ F9 │F10 │
+├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+│TAB │F11 │F12 │    │    │    │    │    │    │    │
+├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+│CAPS│PRSC│SLCK│PAU │    │NMLK│    │VOL-│VOL+│MUTE│
+├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+│    │    │    │    │▓▓▓▓│    │    │    │    │    │
+└────┴────┴────┴────┴────┴────┴────┴────┴────┴────┘
+```
+
+**Layer 3 — Navigation** (hold -)
+```
+┌────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
+│ESC │ ↑  │    │    │    │INS │PGUP│    │PGDN│DEL │
+├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+│ ←  │ ↓  │ →  │TAB │    │HOME│    │    │    │▓▓▓▓│
+├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+│    │    │    │    │    │END │    │    │    │    │
+├────┼────┼────┼────┼────┼────┼────┼────┼────┼────┤
+│    │    │    │    │BSP │    │    │    │    │    │
+└────┴────┴────┴────┴────┴────┴────┴────┴────┴────┘
+Arrows on WASD: W=↑  A=←  S=↓  D=→
+```
+
+**Layer 4 — System / Bluetooth** (hold /)
+```
+┌──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
+│ BT1  │ BT2  │ BT3  │ BT4  │ BT5  │      │      │      │      │BTCLR │
+├──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┤
+│      │      │      │      │      │      │ USB  │ BLE  │ TOG  │      │
+├──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┤
+│      │      │      │      │      │      │      │      │      │▓▓▓▓▓▓│
+├──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┤
+│      │      │      │      │      │      │      │      │      │      │
+└──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
+BT1–5 : select paired device slot
+BTCLR : clear bond on current slot (re-pair)
+USB   : force USB HID output
+BLE   : force BLE output
+TOG   : toggle USB ↔ BLE
+```
+
+> USB/BLE switching is automatic: plug into a computer → USB HID; plug into a charger → BLE stays active.
+
+---
+
+## Build & Flash
+
+### Automatic (recommended)
+
+Push any change to `config/` → GitHub Actions builds the firmware and publishes a GitHub Release automatically.
+
+**Download:** [github.com/isharoverwhite/banime40/releases](https://github.com/isharoverwhite/banime40/releases)
+
+### Flash
+
+1. Double-tap the RST pin (or hold the top-left key on power-up) to enter bootloader
+2. The board appears as a USB drive named **NRF52BOOT**
+3. Drag and drop `banime40_remap-nice_nano_v2.uf2` onto the drive
+4. The board reboots automatically
+
+### Local build (requires Zephyr SDK + west)
+
+```bash
+west init -l config
+west update
+west zephyr-export
+west build -p -s zmk/app -b nice_nano_v2 -- \
+  -DSHIELD=banime40_remap \
+  -DZMK_CONFIG="$(pwd)/config"
+```
+
+---
+
+## Repository structure
+
+```
+banime40/
+├── build.yaml                          # west build target
+├── config/
+│   ├── west.yml                        # ZMK v0.3-branch pin
+│   └── boards/shields/banime40_remap/
+│       ├── banime40_remap.overlay      # GPIO matrix wiring (devicetree)
+│       ├── banime40_remap.keymap       # 5-layer key bindings
+│       ├── banime40_remap.conf         # Kconfig: BLE, USB, sleep, battery
+│       ├── CMakeLists.txt
+│       └── Kconfig.shield
+└── .github/workflows/build.yml        # CI: build + auto-release
+```
+
+---
+
+## License
+
+The original banime40 keyboard design and QMK firmware are the work of [ChrisChrisLoLo](https://github.com/ChrisChrisLoLo/banime40) and are subject to their respective licenses.
+
+This ZMK port is released under the [MIT License](https://opensource.org/licenses/MIT).
