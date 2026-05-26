@@ -67,7 +67,7 @@ jobs:
         working-directory: zmk-config
         run: |
           west build -p -s zmk/app \
-            -b nice_nano_v2 \
+            -b nice_nano/v2 \
             -- \
             -DSHIELD=banime40 \
             -DZMK_CONFIG="${GITHUB_WORKSPACE}/zmk-config/config"
@@ -90,7 +90,7 @@ jobs:
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: banime40-nice_nano_v2-${{ github.sha }}
+          name: banime40-nice_nano-v2-${{ github.sha }}
           path: zmk-config/build/zephyr/zmk.uf2
           retention-days: 90
 
@@ -136,11 +136,11 @@ jobs:
       - name: Download firmware artifact
         uses: actions/download-artifact@v4
         with:
-          name: banime40-nice_nano_v2-${{ github.sha }}
+          name: banime40-nice_nano-v2-${{ github.sha }}
           path: firmware
 
       - name: Rename firmware for release
-        run: mv firmware/zmk.uf2 firmware/banime40-nice_nano_v2.uf2
+        run: mv firmware/zmk.uf2 firmware/banime40-nice_nano-v2.uf2
 
       - name: Create GitHub Release
         env:
@@ -167,7 +167,7 @@ jobs:
 
           ### Flash Instructions
           1. Double-tap RST pin to enter bootloader — \`NRF52BOOT\` drive appears
-          2. Drag-and-drop \`banime40-nice_nano_v2.uf2\` onto the drive
+          2. Drag-and-drop \`banime40-nice_nano-v2.uf2\` onto the drive
           3. Board reboots automatically into new firmware
 
           ### Bluetooth
@@ -178,7 +178,7 @@ jobs:
           MARKDOWN
           )
           gh release create "$TAG" \
-            "firmware/banime40-nice_nano_v2.uf2" \
+            "firmware/banime40-nice_nano-v2.uf2" \
             --repo "$REPO" \
             --title "Firmware ${TAG}" \
             --notes "$NOTES"
