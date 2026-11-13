@@ -32,9 +32,11 @@
 / {
     chosen {
         zmk,kscan = &kscan0;
-        /* zmk,battery disabled: driver API changed in ZMK/Zephyr 4.x
-         * TODO: re-enable once correct compatible string is confirmed.
-         * zmk,battery = &vbatt;
+        /*
+         * zmk,battery is already set by nice!nano v2.0.0 board overlay
+         * (compatible = "zmk,battery-nrf-vddh" — internal VDDH/5 measurement).
+         * No override needed — battery reporting works out of the box
+         * when CONFIG_ZMK_BATTERY_REPORTING=y is set in banime40.conf.
          */
     };
 
